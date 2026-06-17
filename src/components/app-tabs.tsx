@@ -9,13 +9,13 @@ export default function AppTabs() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: 'Dashboard',
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
-          title: 'Explore',
+          title: 'Calendar',
         }}
       />
     </Tabs>
