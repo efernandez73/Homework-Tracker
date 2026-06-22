@@ -1,5 +1,10 @@
 import AppTabs from '@/components/app-tabs';
+import { AssignmentsProvider } from '@/context/assignments-context';
 
 export default function TabLayout() {
-  return <AppTabs />;
+  return (
+    <AssignmentsProvider>
+      <AppTabs />
+    </AssignmentsProvider>
+  );
 }

@@ -1,102 +1,50 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import DateTimePicker, {
+  DateTimePickerAndroid,
+} from '@react-native-community/datetimepicker';
 import { useEffect, useState } from 'react';
 import {
   FlatList,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
-
-type Assignment = {
-  id: string;
-  title: string;
-  className: string;
-  dueDate: string;
-  priority: 'Low' | 'Medium' | 'High';
-  completed: boolean;
-};
+import { useAssignments } from '@/context/assignments-context';
+import { requestNotificationPermissions } from '@/lib/notifications';
 
 export default function HomeScreen() {
-  const [assignments, setAssignments] = useState<Assignment[]>([
-    {
-      id: '1',
-      title: 'Project',
-      className: 'CSC 341',
-      dueDate: 'June 20',
-      priority: 'High',
-      completed: false,
-    },
-    {
-      id: '2',
-      title: 'Database Report',
-      className: 'CSC 453',
-      dueDate: 'June 22',
-      priority: 'Medium',
-      completed: false,
-    },
-  ]);
+  const { assignments, addAssignment, toggleComplete, deleteAssignment } =
+    useAssignments();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [title, setTitle] = useState('');
   const [className, setClassName] = useState('');
-  const [dueDate, setDueDate] = useState('');
+  const [dueDate, setDueDate] = useState(new Date());
   const [priority, setPriority] = useState('Medium');
 
   useEffect(() => {
-  const loadAssignments = async () => {
-    const savedAssignments = await AsyncStorage.getItem('assignments');
+    requestNotificationPermissions();
+  }, []);
 
-    if (savedAssignments) {
-      setAssignments(JSON.parse(savedAssignments));
-    }
-  };
-
-  loadAssignments();
-}, []);
-
-useEffect(() => {
-  AsyncStorage.setItem('assignments', JSON.stringify(assignments));
-}, [assignments]);
-
-  const addAssignment = () => {
-    if (!title || !className || !dueDate) {
+  const handleAddAssignment = async () => {
+    if (!title || !className) {
       return;
     }
 
-    const newAssignment: Assignment = {
-      id: Date.now().toString(),
+    await addAssignment(
       title,
       className,
       dueDate,
-      priority: priority as 'Low' | 'Medium' | 'High',
-      completed: false,
-    };
-
-    setAssignments([...assignments, newAssignment]);
+      priority as 'Low' | 'Medium' | 'High'
+    );
 
     setTitle('');
     setClassName('');
-    setDueDate('');
+    setDueDate(new Date());
     setModalVisible(false);
-  };
-
-  const toggleComplete = (id: string) => {
-    setAssignments(
-      assignments.map((assignment) =>
-        assignment.id === id
-          ? { ...assignment, completed: !assignment.completed }
-          : assignment
-      )
-    );
-  };
-
-  const deleteAssignment = (id: string) => {
-    setAssignments(
-      assignments.filter((assignment) => assignment.id !== id)
-    );
   };
 
   return (
@@ -124,7 +72,7 @@ useEffect(() => {
             </Text>
 
             <Text style={styles.assignmentDue}>
-              Due: {item.dueDate}
+              Due: {new Date(item.dueDate).toLocaleString()}
             </Text>
 
             <Text style={styles.assignmentDue}>
@@ -183,13 +131,44 @@ useEffect(() => {
             onChangeText={setClassName}
           />
 
-          <TextInput
-            style={styles.input}
-            placeholder="Due date"
-                        placeholderTextColor="#666"
-            value={dueDate}
-            onChangeText={setDueDate}
-          />
+          {Platform.OS === 'android' ? (
+            <Pressable
+              style={styles.input}
+              onPress={() => {
+                DateTimePickerAndroid.open({
+                  value: dueDate,
+                  mode: 'date',
+                  onChange: (event, selectedDate) => {
+                    if (event.type !== 'set' || !selectedDate) {
+                      return;
+                    }
+
+                    DateTimePickerAndroid.open({
+                      value: selectedDate,
+                      mode: 'time',
+                      onChange: (timeEvent, selectedTime) => {
+                        if (timeEvent.type === 'set' && selectedTime) {
+                          setDueDate(selectedTime);
+                        }
+                      },
+                    });
+                  },
+                });
+              }}
+            >
+              <Text>Due: {dueDate.toLocaleString()}</Text>
+            </Pressable>
+          ) : (
+            <DateTimePicker
+              value={dueDate}
+              mode="datetime"
+              onChange={(_event, selectedDate) => {
+                if (selectedDate) {
+                  setDueDate(selectedDate);
+                }
+              }}
+            />
+          )}
 
           <TextInput
             style={styles.input}
@@ -199,7 +178,7 @@ useEffect(() => {
             onChangeText={setPriority}
           />
 
-          <Pressable style={styles.saveButton} onPress={addAssignment}>
+          <Pressable style={styles.saveButton} onPress={handleAddAssignment}>
             <Text style={styles.buttonText}>Save Assignment</Text>
           </Pressable>
 
