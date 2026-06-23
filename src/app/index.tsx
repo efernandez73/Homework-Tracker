@@ -1,8 +1,11 @@
+import { useAssignments } from '@/context/assignments-context';
+import { requestNotificationPermissions } from '@/lib/notifications';
 import DateTimePicker, {
   DateTimePickerAndroid,
 } from '@react-native-community/datetimepicker';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
+  Animated,
   FlatList,
   Modal,
   Platform,
@@ -10,10 +13,8 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  View,
+  View
 } from 'react-native';
-import { useAssignments } from '@/context/assignments-context';
-import { requestNotificationPermissions } from '@/lib/notifications';
 
 export default function HomeScreen() {
   const { assignments, addAssignment, toggleComplete, deleteAssignment } =
@@ -24,6 +25,8 @@ export default function HomeScreen() {
   const [className, setClassName] = useState('');
   const [dueDate, setDueDate] = useState(new Date());
   const [priority, setPriority] = useState('Medium');
+  const [priorityModalVisible, setPriorityModalVisible] = useState(false);
+  const prioritySlide = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     requestNotificationPermissions();
@@ -45,6 +48,26 @@ export default function HomeScreen() {
     setClassName('');
     setDueDate(new Date());
     setModalVisible(false);
+  };
+
+  const openPriorityModal = () => {
+  setPriorityModalVisible(true);
+
+  Animated.timing(prioritySlide, {
+    toValue: 1,
+    duration: 220,
+    useNativeDriver: true,
+  }).start();
+  };
+
+  const closePriorityModal = () => {
+    Animated.timing(prioritySlide, {
+      toValue: 0,
+      duration: 220,
+      useNativeDriver: true,
+    }).start(() => {
+      setPriorityModalVisible(false);
+    });
   };
 
   return (
@@ -170,13 +193,47 @@ export default function HomeScreen() {
             />
           )}
 
-          <TextInput
-            style={styles.input}
-            placeholder="Priority (Low, Medium, High)"
-            placeholderTextColor="#666"
-            value={priority}
-            onChangeText={setPriority}
-          />
+          <Pressable
+            style={[styles.input, styles.priorityInput]}
+            onPress={openPriorityModal}
+          >
+            <Text style={styles.priorityText}>{priority}</Text>
+          </Pressable>
+
+          <Modal
+            visible={priorityModalVisible}
+            transparent={true}
+            animationType="none"
+          >
+            <View style={styles.priorityModalOverlay}>
+              <Animated.View
+                style={[
+                  styles.priorityModalBox,
+                  {
+                    opacity: prioritySlide,
+                    transform: [{ scaleY: prioritySlide }],
+                  },
+                ]}
+              >
+                {['High', 'Medium', 'Low'].map((level) => (
+                  <Pressable
+                    key={level}
+                    style={styles.priorityOption}
+                    onPress={() => {
+                      setPriority(level);
+                      closePriorityModal();
+                    }}
+                  >
+                    <Text style={styles.priorityOptionText}>{level}</Text>
+                  </Pressable>
+                ))}
+
+                <Pressable onPress={closePriorityModal}>
+                  <Text style={styles.priorityCancel}>Cancel</Text>
+                </Pressable>
+              </Animated.View>
+            </View>
+          </Modal>
 
           <Pressable style={styles.saveButton} onPress={handleAddAssignment}>
             <Text style={styles.buttonText}>Save Assignment</Text>
@@ -272,4 +329,47 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#555',
   },
+  priorityInput: {
+  marginTop: 20,
+  },
+  priorityText: {
+    fontSize: 16,
+    color: '#000',
+  },
+
+  priorityModalOverlay: {
+  flex: 1,
+  backgroundColor: 'rgba(0,0,0,0.35)',
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+
+priorityModalBox: {
+  backgroundColor: '#5f5f5f',
+  width: '80%',
+  borderRadius: 28,
+  paddingVertical: 24,
+  paddingHorizontal: 20,
+},
+
+priorityOption: {
+  paddingVertical: 18,
+  borderBottomWidth: 1,
+  borderBottomColor: 'rgba(255,255,255,0.25)',
+},
+
+priorityOptionText: {
+  fontSize: 24,
+  fontWeight: '700',
+  color: '#fff',
+  textAlign: 'center',
+},
+
+priorityCancel: {
+  marginTop: 18,
+  fontSize: 22,
+  fontWeight: '700',
+  color: '#fff',
+  textAlign: 'center',
+},
 });
