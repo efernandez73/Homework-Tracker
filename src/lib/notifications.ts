@@ -70,7 +70,11 @@ export async function scheduleAssignmentReminders(
   return ids;
 }
 
-export async function cancelAssignmentReminders(notificationIds: string[]) {
+export async function cancelAssignmentReminders(notificationIds?: string[]) {
+  if (!notificationIds || notificationIds.length === 0) {
+    return;
+  }
+
   await Promise.all(
     notificationIds.map((id) => Notifications.cancelScheduledNotificationAsync(id))
   );

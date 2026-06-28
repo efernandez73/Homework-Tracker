@@ -33,13 +33,13 @@ function buildMonthGrid(month: Date) {
 export default function MonthCalendar({
   month,
   selectedDate,
-  markedDateKeys,
+  markedDatePriorities,
   onSelectDate,
   onChangeMonth,
 }: {
   month: Date;
   selectedDate: Date | null;
-  markedDateKeys: Set<string>;
+  markedDatePriorities?: Map<string, 'Low' | 'Medium' | 'High'>;
   onSelectDate: (date: Date) => void;
   onChangeMonth: (month: Date) => void;
 }) {
@@ -88,7 +88,7 @@ export default function MonthCalendar({
 
           const isSelected = selectedDate ? isSameDay(date, selectedDate) : false;
           const isToday = isSameDay(date, today);
-          const hasAssignments = markedDateKeys.has(toDateKey(date));
+          const datePriority = markedDatePriorities?.get(toDateKey(date));
 
           return (
             <Pressable
@@ -109,9 +109,17 @@ export default function MonthCalendar({
                   {date.getDate()}
                 </Text>
               </View>
-              {hasAssignments && (
+              {datePriority && (
                 <View
-                  style={[styles.dot, isSelected && styles.dotSelected]}
+                  style={[
+                    styles.dot,
+                    datePriority === 'High'
+                      ? styles.highDot
+                      : datePriority === 'Medium'
+                      ? styles.mediumDot
+                      : styles.lowDot,
+                    isSelected && styles.dotSelected,
+                  ]}
                 />
               )}
             </Pressable>
@@ -196,10 +204,21 @@ const styles = StyleSheet.create({
     width: 5,
     height: 5,
     borderRadius: 2.5,
-    backgroundColor: '#ef4444',
     marginTop: 2,
   },
   dotSelected: {
     backgroundColor: '#2563eb',
+  },
+
+  highDot: {
+  backgroundColor: '#ef4444',
+  },
+
+  mediumDot: {
+    backgroundColor: '#f59e0b',
+  },
+
+  lowDot: {
+    backgroundColor: '#22c55e',
   },
 });

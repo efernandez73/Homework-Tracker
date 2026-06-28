@@ -1,10 +1,10 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createContext, useContext, useEffect, useState } from 'react';
 import {
   cancelAssignmentReminders,
   scheduleAssignmentReminders,
 } from '@/lib/notifications';
 import type { Assignment } from '@/types/assignment';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createContext, useContext, useEffect, useState } from 'react';
 
 const STORAGE_KEY = 'assignments';
 
@@ -15,6 +15,7 @@ const initialAssignments: Assignment[] = [
     className: 'CSC 341',
     dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
     priority: 'High',
+    type: 'Project',
     completed: false,
     notificationIds: [],
   },
@@ -24,6 +25,7 @@ const initialAssignments: Assignment[] = [
     className: 'CSC 453',
     dueDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
     priority: 'Medium',
+    type: 'Assignment',
     completed: false,
     notificationIds: [],
   },
@@ -35,7 +37,8 @@ type AssignmentsContextValue = {
     title: string,
     className: string,
     dueDate: Date,
-    priority: Assignment['priority']
+    priority: Assignment['priority'],
+    type: Assignment['type']
   ) => Promise<void>;
   toggleComplete: (id: string) => Promise<void>;
   deleteAssignment: (id: string) => Promise<void>;
@@ -73,7 +76,8 @@ export function AssignmentsProvider({ children }: { children: React.ReactNode })
     title: string,
     className: string,
     dueDate: Date,
-    priority: Assignment['priority']
+    priority: Assignment['priority'],
+    type: Assignment['type']
   ) => {
     const notificationIds = await scheduleAssignmentReminders(
       title,
@@ -87,6 +91,7 @@ export function AssignmentsProvider({ children }: { children: React.ReactNode })
       className,
       dueDate: dueDate.toISOString(),
       priority,
+      type,
       completed: false,
       notificationIds,
     };
