@@ -1,10 +1,8 @@
+import { toDateKey } from '@/lib/date';
+import { getWorkloadLevel } from '@/lib/workload';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 const WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-
-function toDateKey(date: Date) {
-  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-}
 
 function isSameDay(a: Date, b: Date) {
   return toDateKey(a) === toDateKey(b);
@@ -34,12 +32,14 @@ export default function MonthCalendar({
   month,
   selectedDate,
   markedDatePriorities,
+  markedDateWorkload,
   onSelectDate,
   onChangeMonth,
 }: {
   month: Date;
   selectedDate: Date | null;
   markedDatePriorities?: Map<string, 'Low' | 'Medium' | 'High'>;
+  markedDateWorkload?: Map<string, number>;
   onSelectDate: (date: Date) => void;
   onChangeMonth: (month: Date) => void;
 }) {
@@ -89,6 +89,9 @@ export default function MonthCalendar({
           const isSelected = selectedDate ? isSameDay(date, selectedDate) : false;
           const isToday = isSameDay(date, today);
           const datePriority = markedDatePriorities?.get(toDateKey(date));
+          const workloadLevel = getWorkloadLevel(
+            markedDateWorkload?.get(toDateKey(date)) ?? 0
+          );
 
           return (
             <Pressable
@@ -99,8 +102,10 @@ export default function MonthCalendar({
               <View
                 style={[
                   styles.dayCircle,
-                  isSelected && styles.dayCircleSelected,
+                  workloadLevel === 'Moderate' && styles.dayCircleModerate,
+                  workloadLevel === 'Heavy' && styles.dayCircleHeavy,
                   isToday && !isSelected && styles.dayCircleToday,
+                  isSelected && styles.dayCircleSelected,
                 ]}
               >
                 <Text
@@ -129,8 +134,6 @@ export default function MonthCalendar({
     </View>
   );
 }
-
-export { toDateKey };
 
 const styles = StyleSheet.create({
   container: {
@@ -191,6 +194,12 @@ const styles = StyleSheet.create({
   dayCircleToday: {
     borderWidth: 1,
     borderColor: '#2563eb',
+  },
+  dayCircleModerate: {
+    backgroundColor: '#fef3c7',
+  },
+  dayCircleHeavy: {
+    backgroundColor: '#fecaca',
   },
   dayText: {
     fontSize: 14,

@@ -1,5 +1,7 @@
-import MonthCalendar, { toDateKey } from '@/components/month-calendar';
+import MonthCalendar from '@/components/month-calendar';
 import { useAssignments } from '@/context/assignments-context';
+import { toDateKey } from '@/lib/date';
+import { getWorkloadByDate, getWorkloadLevel } from '@/lib/workload';
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -68,6 +70,16 @@ export default function CalendarScreen() {
       .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
   }, [assignments, selectedDate]);
 
+  const workloadByDate = useMemo(() => getWorkloadByDate(assignments), [assignments]);
+
+  const selectedDateWorkloadLevel = useMemo(() => {
+    if (!selectedDate) {
+      return 'Light';
+    }
+
+    return getWorkloadLevel(workloadByDate.get(toDateKey(selectedDate)) ?? 0);
+  }, [selectedDate, workloadByDate]);
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Calendar</Text>
@@ -76,19 +88,37 @@ export default function CalendarScreen() {
         month={month}
         selectedDate={selectedDate}
         markedDatePriorities={markedDatePriorities}
+        markedDateWorkload={workloadByDate}
         onSelectDate={setSelectedDate}
         onChangeMonth={setMonth}
       />
 
-      <Text style={styles.sectionTitle}>
-        {selectedDate
-          ? selectedDate.toLocaleDateString(undefined, {
-              weekday: 'long',
-              month: 'long',
-              day: 'numeric',
-            })
-          : 'Select a date'}
-      </Text>
+      <View style={styles.sectionTitleRow}>
+        <Text style={styles.sectionTitle}>
+          {selectedDate
+            ? selectedDate.toLocaleDateString(undefined, {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric',
+              })
+            : 'Select a date'}
+        </Text>
+
+        {selectedDateWorkloadLevel !== 'Light' && (
+          <View
+            style={[
+              styles.workloadBadge,
+              selectedDateWorkloadLevel === 'Heavy'
+                ? styles.workloadBadgeHeavy
+                : styles.workloadBadgeModerate,
+            ]}
+          >
+            <Text style={styles.workloadBadgeText}>
+              {selectedDateWorkloadLevel} workload
+            </Text>
+          </View>
+        )}
+      </View>
 
       <FlatList
         data={assignmentsForSelectedDate}
@@ -218,6 +248,32 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 20,
     marginBottom: 12,
+  },
+
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  workloadBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+  },
+
+  workloadBadgeModerate: {
+    backgroundColor: '#f59e0b',
+  },
+
+  workloadBadgeHeavy: {
+    backgroundColor: '#ef4444',
+  },
+
+  workloadBadgeText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 12,
   },
 
   listContent: {

@@ -1,10 +1,11 @@
 import { useAssignments } from '@/context/assignments-context';
 import { requestNotificationPermissions } from '@/lib/notifications';
+import { getUpcomingHeavyDays } from '@/lib/workload';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker, {
   DateTimePickerAndroid,
 } from '@react-native-community/datetimepicker';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   FlatList,
@@ -99,6 +100,9 @@ export default function HomeScreen() {
   }).length;
 
   const completedAssignments = assignments.filter((a) => a.completed).length;
+
+  const heavyDays = useMemo(() => getUpcomingHeavyDays(assignments, 7), [assignments]);
+
   const [typeModalVisible, setTypeModalVisible] = useState(false);
   const typeSlide = useRef(new Animated.Value(0)).current;
 
@@ -181,6 +185,18 @@ export default function HomeScreen() {
           <Text style={styles.statLabel}>Done</Text>
         </View>
       </View>
+
+      {heavyDays.length > 0 && (
+        <View style={styles.workloadBanner}>
+          <Ionicons name="warning-outline" size={20} color="#b45309" />
+          <Text style={styles.workloadBannerText}>
+            Heavy workload:{' '}
+            {heavyDays
+              .map((d) => d.date.toLocaleDateString(undefined, { weekday: 'short' }))
+              .join(', ')}
+          </Text>
+        </View>
+      )}
 
       <Text style={styles.sectionTitle}>Current Assignments</Text>
 
@@ -440,6 +456,21 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     marginBottom: 12,
+  },
+  workloadBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fef3c7',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 20,
+    gap: 8,
+  },
+  workloadBannerText: {
+    color: '#92400e',
+    fontWeight: '600',
+    fontSize: 14,
+    flexShrink: 1,
   },
   card: {
     backgroundColor: 'white',
